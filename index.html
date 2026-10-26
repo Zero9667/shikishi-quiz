@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<!-- user-scalable=no: su tablet un doppio tocco rapido sui pulsanti non deve
+     ingrandire la pagina. L'ingrandimento delle immagini e' gestito dall'app. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Vero o falso?</title>
+<link rel="stylesheet" href="stile.css">
+</head>
+<body>
+
+<!-- AVVIO ------------------------------------------------------------------>
+<section id="avvio" class="schermata attiva">
+  <div class="centro">
+    <h1 class="titolo" data-t-html="avvio_titolo">Vero <span class="o">o</span> falso?</h1>
+    <div class="fumetto" data-t-html="avvio_testo">
+      Riesci a distinguere un disegno autentico da una <b>copia fatta a mano</b>
+      o da un'immagine <b>creata con l'intelligenza artificiale</b>?
+      Prova, e sfida il nostro modello!
+    </div>
+    <button class="grande" id="btn-avvia" data-t="avvio_cta">TOCCA PER INIZIARE</button>
+    <p class="piccolo" id="avvio-conteggio"></p>
+    <p class="piccolo" id="avvio-salvataggio"></p>
+  </div>
+  <button id="rotella" title="Impostazioni" aria-label="Impostazioni">⚙</button>
+  <!-- lingua: cambia le scritte per il partecipante. Sta solo qui, cosi' nessuno
+       la tocca per sbaglio a partita iniziata. La sigla dice la lingua IN CUI si
+       passa, non quella attiva. -->
+  <button id="lingua" title="Passa all'inglese" aria-label="Passa all'inglese">EN</button>
+  <button id="esci" title="Chiudi il quiz" aria-label="Chiudi il quiz"
+          data-t="esci" data-t-aria="esci_aria">ESCI</button>
+</section>
+
+<!-- ISTRUZIONI E CONSENSO -------------------------------------------------->
+<section id="istruzioni" class="schermata">
+  <div class="vignetta">
+    <h2 data-t="istr_titolo">Come funziona</h2>
+    <div class="esempi">
+      <figure><img id="es-autentico" alt="" draggable="false"><figcaption data-t="es_autentico">È dell'autore</figcaption></figure>
+      <figure><img id="es-copia" alt="" draggable="false"><figcaption data-t="es_copia">Copia a mano</figcaption></figure>
+      <figure><img id="es-ai" alt="" draggable="false"><figcaption data-t="es_ai">Fatta con AI</figcaption></figure>
+    </div>
+    <p class="guida" data-t-html="istr_guida">Ti mostriamo tre opere autentiche di un autore, poi <span id="istr-n">12</span> immagini.
+      Per ognuna scegli se è davvero sua, se è una <b>copia disegnata a mano</b> da un'altra persona
+      o se è stata <b>creata con l'intelligenza artificiale</b>.
+      Ogni tanto comparirà un controllo che ti chiede di premere un pulsante preciso.
+      Tocca un'immagine per ingrandirla. Alla fine vedi com'è andata, immagine per immagine.</p>
+    <div class="domanda">
+      <span data-t="q_rigiocato">Hai già giocato oggi?</span>
+      <button class="scelta" data-campo="gia_giocato" data-valore="0" data-t="no">No</button>
+      <button class="scelta" data-campo="gia_giocato" data-valore="1" data-t="si">Sì</button>
+    </div>
+    <div class="domanda">
+      <span data-t="q_minorenne">Hai meno di 18 anni?</span>
+      <button class="scelta" data-campo="minorenne" data-valore="0" data-t="no">No</button>
+      <button class="scelta" data-campo="minorenne" data-valore="1" data-t="si">Sì</button>
+    </div>
+    <p class="piccolo" data-t="consenso">I dati raccolti sono anonimi: non registriamo nome, contatti, foto né alcun dato
+      che permetta di risalire a te. Servono a una ricerca sul riconoscimento automatico di opere
+      contraffatte e saranno pubblicati solo in forma aggregata. La partecipazione è volontaria e puoi
+      smettere in qualsiasi momento. Se hai meno di 18 anni, chiedi a chi ti accompagna di toccare
+      «Inizia» insieme a te.</p>
+    <button class="grande" id="btn-inizia" data-t="istr_cta" disabled>INIZIA</button>
+  </div>
+</section>
+
+<!-- RIFERIMENTI ------------------------------------------------------------>
+<section id="riferimenti" class="schermata">
+  <div class="vignetta">
+    <h2 id="rif-titolo"></h2>
+    <p class="guida" data-t="rif_guida">Queste tre opere sono autentiche. Guardale bene: ti serviranno per riconoscere il suo tratto.</p>
+    <p class="suggerimento-rif"><span class="lente in-linea" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6M10 7v6M7 10h6"/></svg></span>
+      <span data-t="rif_zoom">Tocca un'opera per vederla più grande</span></p>
+    <div class="fila-riferimenti" id="rif-immagini"></div>
+    <button class="grande" id="btn-riferimenti" data-t="rif_cta">HO CAPITO, INIZIAMO</button>
+  </div>
+</section>
+
+<!-- PROVA ------------------------------------------------------------------>
+<section id="prova" class="schermata">
+  <header class="testata">
+    <span id="p-autore"></span>
+    <span id="p-puntini" class="puntini"></span>
+    <span id="p-contatore"></span>
+  </header>
+  <main class="corpo">
+    <aside class="laterale">
+      <div class="etichetta"><span data-t="p_opere">Opere autentiche</span> <span class="lente in-linea" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6M10 7v6M7 10h6"/></svg></span></div>
+      <div id="p-riferimenti"></div>
+    </aside>
+    <div class="palco">
+      <img id="p-immagine" alt="" draggable="false">
+      <span id="p-lente" class="lente lente-palco" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6M10 7v6M7 10h6"/></svg></span>
+      <div id="p-suggerimento" class="fumetto-zoom" hidden>
+        <span class="lente in-linea" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6M10 7v6M7 10h6"/></svg></span> <span data-t="p_zoom">Tocca l'immagine per ingrandirla</span>
+      </div>
+      <div id="p-controllo" class="cartoncino" hidden>
+        <div class="c-titolo" data-t="cart_titolo">CONTROLLO DI ATTENZIONE</div>
+        <div class="c-testo" data-t="cart_testo">Per questa immagine premi</div>
+        <div class="c-pulsante" id="p-richiesto"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="risposte">
+    <button class="risposta" data-risposta="autentico" id="btn-autentico"></button>
+    <button class="risposta" data-risposta="copia" data-t="r_copia">Copia a mano</button>
+    <button class="risposta" data-risposta="ai" data-t="r_ai">Fatta con AI</button>
+  </footer>
+</section>
+
+<!-- DOMANDE FINALI --------------------------------------------------------->
+<section id="domande" class="schermata">
+  <div class="vignetta">
+    <h2 data-t="dom_titolo">Ultime domande</h2>
+    <div class="domanda obbligatoria" data-obbligatoria="risposto_a_caso">
+      <span data-t="q_caso">Hai risposto a caso almeno in parte?</span>
+      <button class="scelta" data-campo="risposto_a_caso" data-valore="no" data-t="no">No</button>
+      <button class="scelta" data-campo="risposto_a_caso" data-valore="si" data-t="si">Sì</button>
+    </div>
+    <p class="piccolo" data-t="nota_caso">Rispondi sinceramente: non cambia il tuo punteggio, ci serve a capire quali dati usare.</p>
+    <div class="domanda obbligatoria" data-obbligatoria="conosce_autore">
+      <span id="dom-autore">Conoscevi questo autore?</span>
+      <button class="scelta" data-campo="conosce_autore" data-valore="no" data-t="o_no">No</button>
+      <button class="scelta" data-campo="conosce_autore" data-valore="di_nome" data-t="o_di_nome">Di nome</button>
+      <button class="scelta" data-campo="conosce_autore" data-valore="opere" data-t="o_opere">Sì, le sue opere</button>
+    </div>
+    <div class="profilo" id="profilo">
+      <div class="domanda"><span data-t="q_eta">Quanti anni hai?</span>
+        <button class="scelta" data-campo="eta" data-valore="<14" data-t="eta_0">meno di 14</button>
+        <button class="scelta" data-campo="eta" data-valore="14-17" data-t="eta_1">14-17</button>
+        <button class="scelta" data-campo="eta" data-valore="18-25" data-t="eta_2">18-25</button>
+        <button class="scelta" data-campo="eta" data-valore="26-40" data-t="eta_3">26-40</button>
+        <button class="scelta" data-campo="eta" data-valore="41-60" data-t="eta_4">41-60</button>
+        <button class="scelta" data-campo="eta" data-valore="60+" data-t="eta_5">oltre 60</button>
+      </div>
+      <div class="domanda"><span data-t="q_manga">Quanto spesso leggi manga?</span>
+        <button class="scelta" data-campo="manga" data-valore="mai" data-t="manga_0">mai</button>
+        <button class="scelta" data-campo="manga" data-valore="ogni_tanto" data-t="manga_1">ogni tanto</button>
+        <button class="scelta" data-campo="manga" data-valore="spesso" data-t="manga_2">spesso</button>
+        <button class="scelta" data-campo="manga" data-valore="ogni_giorno" data-t="manga_3">ogni giorno</button>
+      </div>
+      <div class="domanda"><span data-t="q_disegno">Disegni?</span>
+        <button class="scelta" data-campo="disegno" data-valore="no" data-t="disegno_0">no</button>
+        <button class="scelta" data-campo="disegno" data-valore="hobby" data-t="disegno_1">per hobby</button>
+        <button class="scelta" data-campo="disegno" data-valore="studio_lavoro" data-t="disegno_2">per studio o lavoro</button>
+      </div>
+      <div class="domanda"><span data-t="q_visto">Avevi visto giocare qualcuno prima di te?</span>
+        <button class="scelta" data-campo="visto_giocare" data-valore="no" data-t="no">no</button>
+        <button class="scelta" data-campo="visto_giocare" data-valore="si" data-t="si">sì</button>
+      </div>
+    </div>
+    <p class="piccolo" id="profilo-nota" data-t="nota_profilo">Le domande sul profilo sono facoltative, e si fanno una volta sola.</p>
+    <p class="avviso-manca" id="dom-manca" data-t="dom_manca" hidden>Rispondi anche alla domanda evidenziata in rosso</p>
+    <button class="grande" id="btn-domande" data-t="dom_cta">VEDI IL RISULTATO</button>
+  </div>
+</section>
+
+<!-- RISULTATO -------------------------------------------------------------->
+<section id="risultato" class="schermata">
+  <div class="risultato">
+    <div class="r-testa">
+      <div class="punteggio"><b id="r-tu"></b><span><span data-t="res_tu">Tu ·</span> <i id="r-tu-perc"></i></span></div>
+      <div class="r-centro">
+        <h2 id="r-titolo">Come è andata</h2>
+        <div class="piccolo" id="r-tipo"></div>
+        <div class="piccolo r-invio" id="r-invio" hidden></div>
+        <div class="legenda">
+          <span><i class="segno esatto">✓</i> <span data-t="leg_esatto">giusta</span></span>
+          <span><i class="segno quasi">✓</i> <span data-t="leg_quasi">hai capito che non era sua, ma era l'altro tipo di falso</span></span>
+          <span><i class="segno sbagliato">✗</i> <span data-t="leg_sbagliato">sbagliata</span></span>
+        </div>
+      </div>
+      <div class="punteggio modello"><b id="r-modello"></b><span><span data-t="res_modello">Il modello ·</span> <i id="r-modello-perc"></i></span></div>
+      <div class="r-pulsanti">
+        <button class="grande piccolo-btn ancora" id="btn-ancora" data-t="res_ancora">GIOCA ANCORA</button>
+        <button class="grande piccolo-btn" id="btn-fine" data-t="res_fine">HO FINITO</button>
+      </div>
+    </div>
+    <div id="r-griglia" class="griglia"></div>
+    <p class="piccolo" id="r-nota" data-t="res_nota">Il punteggio grande conta le immagini in cui hai distinto un'opera autentica
+      da una non autentica; la riga sotto il titolo dice quante volte hai indovinato anche il tipo di falso.
+      Tocca un'immagine per ingrandirla. Con «Gioca ancora» ti diamo un altro autore e immagini mai viste.</p>
+  </div>
+</section>
+
+<!-- ORIENTAMENTO (solo CSS) ------------------------------------------------>
+<div id="ruota"><div class="centro"><div class="icona">↻</div><p class="ruota-orizzontale" data-t="ruota">Gira il dispositivo in orizzontale</p><p class="ruota-verticale" data-t="ruota_verticale">Gira il telefono in verticale</p></div></div>
+
+<!-- INGRANDIMENTO ---------------------------------------------------------->
+<div id="zoom" class="sovrapposto scuro" hidden>
+  <button id="zoom-chiudi" aria-label="Chiudi" data-t-aria="chiudi_aria">✕</button>
+  <img id="zoom-immagine" alt="" draggable="false">
+  <div class="zoom-nota" data-t="zoom_nota">Tocca lo sfondo o la ✕ per chiudere</div>
+</div>
+
+<!-- IMPOSTAZIONI (rotellina nella schermata iniziale) --------------------->
+<div id="impostazioni" class="sovrapposto" hidden>
+  <div class="pannello">
+    <h3>Impostazioni</h3>
+    <p class="piccolo">Quante immagini in una partita? Chi vuole può giocare più partite di seguito,
+      con autori diversi.</p>
+    <div class="domanda" id="imp-immagini">
+      <button class="scelta" data-valore="6">6</button>
+      <button class="scelta" data-valore="8">8</button>
+      <button class="scelta" data-valore="12">12</button>
+      <button class="scelta" data-valore="16">16</button>
+    </div>
+    <p class="piccolo" id="imp-dettaglio"></p>
+    <div class="domanda" id="imp-salvataggio">
+      <span>Scarica un file a ogni partita (se non usi la cartella)</span>
+      <button class="scelta" data-salva="0">No</button>
+      <button class="scelta" data-salva="1">Sì</button>
+    </div>
+    <div class="pulsanti-op">
+      <button id="imp-chiudi">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- OPERATORE: pressione di 3 secondi nell'angolo in alto a sinistra -------->
+<div id="angolo" aria-hidden="true"></div>
+<div id="operatore" class="sovrapposto" hidden>
+  <div class="pannello">
+    <h3>Pannello operatore</h3>
+    <label class="riga-op">Postazione
+      <input id="op-postazione" type="text" maxlength="30" autocomplete="off" spellcheck="false">
+    </label>
+    <pre id="op-stato">…</pre>
+    <div class="pulsanti-op">
+      <button id="op-esporta">Esporta tutto in CSV (scarica il file)</button>
+      <button id="op-condividi" hidden>Esporta e condividi (tablet)</button>
+      <button id="op-cartella" hidden>Collega cartella risultati</button>
+      <button id="op-invia" hidden>Invia adesso i risultati al server</button>
+      <button id="op-chiudi-sessione">Chiudi partita in corso</button>
+      <button id="op-esci">Chiudi il quiz</button>
+      <button id="op-chiudi">Chiudi pannello</button>
+    </div>
+    <p class="piccolo" id="op-esito"></p>
+  </div>
+</div>
+
+<div id="avviso" hidden></div>
+
+<script src="versione.js"></script>
+<script src="dati.js"></script>
+<script src="testi.js"></script>
+<script src="sessione.js"></script>
+<script src="remoto.js"></script>
+<script src="archivio.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

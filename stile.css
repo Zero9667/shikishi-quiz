@@ -1,0 +1,563 @@
+/* ==========================================================================
+   STILE: tavola manga, identico con mouse e con dito
+
+   ASPETTO
+   - Sfondo a retino (i puntini delle "screentone" dei manga) fatto solo con
+     gradienti CSS: nessuna immagine esterna, nessun font scaricato, leggero
+     anche su un PC scarso. Nella schermata iniziale si aggiungono le linee
+     cinetiche.
+   - I contenuti stanno in "vignette": bordo d'inchiostro spesso e ombra piena
+     sfalsata, come le vignette di una tavola.
+   - L'immagine da giudicare sta su fondo carta pieno, mai sul retino: il
+     pattern non deve interferire con la percezione del tratto.
+
+   MOUSE E DITO
+   - Nessuna informazione affidata al passaggio del mouse (hover): su tablet non
+     esiste. L'hover e' solo un abbellimento, attivo dove il puntatore lo consente.
+   - Bersagli grandi (pulsanti di risposta alti almeno 88 px).
+   - touch-action: manipulation toglie il ritardo del doppio tocco e lo zoom
+     accidentale; user-select e -webkit-touch-callout evitano che una pressione
+     lunga selezioni testo o apra il menu dell'immagine.
+   - I tre pulsanti di risposta hanno LO STESSO aspetto: un colore diverso
+     suggerirebbe una risposta "giusta" o piu' importante. Per lo stesso motivo
+     NON hanno effetto hover: col mouse il puntatore resta sul pulsante appena
+     premuto, che alla prova successiva sembrerebbe gia' selezionato.
+   ========================================================================== */
+
+:root {
+  --sfondo: #f1ece1;
+  --carta: #fffdf7;
+  --inchiostro: #141210;
+  --tenue: #625c52;
+  --bordo: #d6cebd;
+  --retino: rgba(20, 18, 16, .10);
+  --accento: #d23a2a;
+  --modello: #1f5f8b;
+  --esatto: #1e8a3c;
+  --quasi: #d98b00;
+  --sbagliato: #c8322b;
+  --lato: min(calc(100vh - 262px), calc(100vw - 500px), 620px);
+  --lato-rif: calc((var(--lato) - 40px) / 3);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  color: var(--inchiostro);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+body {
+  background-color: var(--sfondo);
+  background-image: radial-gradient(circle, var(--retino) 1.3px, transparent 1.7px);
+  background-size: 11px 11px;
+}
+input { -webkit-user-select: text; user-select: text; }
+img { -webkit-user-drag: none; }
+
+/* ── schermate ───────────────────────────────────────────────────────────── */
+.schermata { display: none; position: fixed; inset: 0; overflow-y: auto; padding: 20px; }
+.schermata.attiva { display: flex; }
+.centro { margin: auto; text-align: center; max-width: 860px; padding: 24px;
+          display: flex; flex-direction: column; align-items: center; gap: 26px; }
+
+.vignetta {
+  margin: auto; width: 100%; max-width: 1040px; padding: 26px 34px 30px;
+  background: var(--carta); border: 4px solid var(--inchiostro); border-radius: 4px;
+  box-shadow: 8px 8px 0 var(--inchiostro);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+
+h1, h2 { font-weight: 900; letter-spacing: .5px; }
+h2 { font-size: 32px; margin: 0; text-transform: uppercase; }
+h3 { margin: 0 0 12px; }
+.guida { font-size: 20px; line-height: 1.45; margin: 0; text-align: center; max-width: 880px; }
+.piccolo { font-size: 14px; color: var(--tenue); line-height: 1.4; margin: 0; text-align: center; max-width: 900px; }
+
+/* ── avvio: linee cinetiche + titolo + fumetto ──────────────────────────── */
+#avvio {
+  background-image:
+    repeating-conic-gradient(from 0deg at 50% 45%, rgba(20, 18, 16, .07) 0deg 1.6deg, transparent 1.6deg 7deg),
+    radial-gradient(circle at 50% 45%, var(--sfondo) 0 22%, transparent 60%);
+}
+.titolo {
+  margin: 0; font-size: 92px; line-height: 1; text-transform: uppercase; font-style: italic;
+  color: var(--carta);
+  -webkit-text-stroke: 3px var(--inchiostro);
+  text-shadow: 6px 6px 0 var(--inchiostro);
+}
+.titolo .o { color: var(--accento); font-size: .6em; -webkit-text-stroke: 2px var(--inchiostro);
+             text-shadow: 4px 4px 0 var(--inchiostro); vertical-align: middle; }
+.fumetto {
+  position: relative; max-width: 700px; padding: 22px 30px;
+  font-size: 22px; line-height: 1.45; background: var(--carta);
+  border: 4px solid var(--inchiostro); border-radius: 40px;
+}
+.fumetto::after, .fumetto::before {           /* coda del fumetto */
+  content: ""; position: absolute; left: 60%; border-style: solid;
+}
+.fumetto::before { bottom: -30px; border-width: 30px 22px 0 0; border-color: var(--inchiostro) transparent transparent transparent; }
+.fumetto::after  { bottom: -21px; margin-left: 5px; border-width: 22px 15px 0 0; border-color: var(--carta) transparent transparent transparent; }
+
+/* ── pulsanti ────────────────────────────────────────────────────────────── */
+button {
+  font: inherit; color: inherit; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+button:disabled { cursor: default; }
+
+.grande {
+  min-height: 76px; min-width: 320px; padding: 0 40px;
+  font-size: 26px; font-weight: 900; letter-spacing: 1px;
+  border: 4px solid var(--inchiostro); border-radius: 6px;
+  background: var(--inchiostro); color: var(--carta);
+  box-shadow: 5px 5px 0 var(--accento);
+  transition: transform .05s, box-shadow .05s;
+}
+.grande:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 1px 1px 0 var(--accento); }
+.grande:disabled { opacity: .3; box-shadow: none; }
+
+.scelta {
+  min-height: 54px; min-width: 88px; padding: 0 20px;
+  font-size: 19px; font-weight: 600; border-radius: 6px;
+  border: 3px solid var(--inchiostro); background: var(--carta);
+  box-shadow: 3px 3px 0 var(--inchiostro);
+}
+.scelta.selezionata { background: var(--inchiostro); color: var(--carta); }
+.scelta:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--inchiostro); }
+
+@media (hover: hover) and (pointer: fine) {
+  .grande:not(:disabled):hover { background: #2f2b27; }
+  .scelta:not(.selezionata):hover { background: #efe8da; }
+}
+
+/* ── istruzioni ──────────────────────────────────────────────────────────── */
+.esempi { display: flex; gap: 24px; justify-content: center; }
+.esempi figure { margin: 0; text-align: center; }
+.esempi img { width: min(21vh, 190px); height: min(21vh, 190px); object-fit: cover; display: block;
+              border: 3px solid var(--inchiostro); background: var(--bordo); }
+.esempi figcaption { margin-top: 6px; font-size: 16px; font-weight: 800; text-transform: uppercase; }
+
+.domanda { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.domanda > span { font-size: 20px; margin-right: 8px; }
+.domanda.obbligatoria > span { font-weight: 800; font-size: 22px; }
+.profilo { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
+
+/* domanda obbligatoria rimasta senza risposta quando si preme VEDI IL RISULTATO */
+.domanda.manca { outline: 4px solid var(--accento); outline-offset: 6px; border-radius: 6px;
+                 background: #fbe9e5; }
+.avviso-manca { margin: 0; color: var(--accento); font-weight: 800; font-size: 18px; }
+
+/* ── riferimenti ─────────────────────────────────────────────────────────── */
+.fila-riferimenti { display: flex; gap: 20px; justify-content: center; }
+/* il lato tiene conto anche della larghezza massima della vignetta (1040 px
+   meno bordi, margini interni e spazi), altrimenti su un portatile 1366x768
+   le tre opere uscivano dal riquadro */
+/* il minimo di 120 px: su uno schermo basso calc(100vh - 400px) diventa
+   negativo, e senza minimo le tre opere sparivano */
+.fila-riferimenti img {
+  width: max(120px, min(calc((100vw - 200px) / 3), calc((min(100vw, 1040px) - 130px) / 3), calc(100vh - 400px), 360px));
+  height: max(120px, min(calc((100vw - 200px) / 3), calc((min(100vw, 1040px) - 130px) / 3), calc(100vh - 400px), 360px));
+  display: block; cursor: zoom-in; border: 3px solid var(--inchiostro); background: var(--bordo);
+}
+
+/* ── prova ───────────────────────────────────────────────────────────────── */
+#prova { padding: 0; }
+#prova.attiva { flex-direction: column; overflow: hidden; }
+.testata {
+  height: 58px; flex: none; padding: 0 24px 0 90px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 21px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px;
+  background: var(--carta); border-bottom: 4px solid var(--inchiostro);
+}
+.puntini { display: flex; gap: 6px; }
+.puntini i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--inchiostro); display: block; }
+.puntini i.fatto { background: var(--inchiostro); }
+
+.corpo { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 34px; padding: 14px 24px; }
+.laterale {
+  width: calc(var(--lato-rif) + 28px); padding: 10px; background: var(--carta);
+  border: 3px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.laterale .etichetta { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+#p-riferimenti { display: flex; flex-direction: column; gap: 14px; }
+#p-riferimenti img { width: var(--lato-rif); height: calc(var(--lato-rif) - 12px); object-fit: cover;
+                     display: block; cursor: zoom-in; border: 2px solid var(--inchiostro); background: var(--bordo); }
+
+/* ── lente: segnala che un'immagine si ingrandisce toccandola ─────────────
+   MAI sopra un'immagine da valutare: sull'immagine da giudicare sta
+   sull'angolo della cornice, fuori dal disegno; accanto alle opere di
+   riferimento c'e' solo nell'etichetta. Sulle schede del risultato (giudizio
+   gia' dato) sta nell'angolo dell'immagine.
+   Non intercetta i tocchi (pointer-events: none). */
+.ingrandibile { position: relative; display: block; flex: none; }
+.lente {
+  position: absolute; right: 6px; bottom: 6px; width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: var(--carta); color: var(--inchiostro);
+  border: 2.5px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
+}
+.lente svg { width: 62%; height: 62%; }
+/* timbro sull'angolo della cornice (la posizione si misura dal bordo interno
+   della cornice): il bordo interno della lente cade sul
+   passe-partout (10 px) e sul bordo (4 px), non sul disegno */
+.lente.lente-palco { right: -34px; bottom: -34px; width: 40px; height: 40px; border-width: 3px; z-index: 2;
+                     pointer-events: auto; cursor: zoom-in;   /* fuori dall'immagine: si tocca lei */
+                     box-shadow: 3px 3px 0 var(--inchiostro); }
+.laterale .etichetta .lente.in-linea { width: 22px; height: 22px; border-width: 2px; margin: 0 0 0 4px; }
+.lente.in-linea { position: static; display: inline-flex; vertical-align: middle; width: 30px; height: 30px;
+                  margin-right: 6px; box-shadow: none; }
+.suggerimento-rif { margin: -4px 0 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; }
+/* fumetto sulla prima immagine: sparisce al primo ingrandimento. Sta a
+   cavallo del bordo superiore della cornice, fuori dal disegno */
+.fumetto-zoom {
+  position: absolute; top: -30px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 2;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 4px 14px 4px 4px; font-size: 16px; font-weight: 800;
+  background: var(--inchiostro); color: var(--carta); border-radius: 30px;
+  box-shadow: 3px 3px 0 var(--accento, #d8432f);
+  animation: fumetto-rimbalzo 1.2s ease-in-out 3;
+}
+.fumetto-zoom[hidden] { display: none; }
+.fumetto-zoom .lente.in-linea { width: 26px; height: 26px; }
+@keyframes fumetto-rimbalzo { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -4px); } }
+
+/* la tavola dell'immagine da giudicare: fondo carta pieno, niente retino */
+.palco { width: calc(var(--lato) + 20px); height: calc(var(--lato) + 20px); position: relative; padding: 10px;
+         background: var(--carta); border: 4px solid var(--inchiostro); box-shadow: 8px 8px 0 var(--inchiostro); }
+#p-immagine { width: 100%; height: 100%; display: block; cursor: zoom-in; background: var(--bordo); }
+#p-immagine.in-caricamento { visibility: hidden; }
+
+/* cartoncino di controllo: neutro, testo grande, niente che ricordi un disegno */
+.cartoncino {
+  position: absolute; inset: 10px;
+  background: var(--carta); border: 3px dashed var(--tenue);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 24px; text-align: center;
+}
+.c-titolo { font-size: 20px; font-weight: 900; letter-spacing: 2px; color: var(--accento); }
+.c-testo { font-size: 30px; }
+.c-pulsante { font-size: 40px; font-weight: 900; }
+
+.risposte {
+  flex: none; height: 132px; padding: 14px 24px 24px;
+  display: flex; gap: 26px; justify-content: center; align-items: stretch;
+  background: var(--carta); border-top: 4px solid var(--inchiostro);
+}
+.risposta {
+  flex: 1; max-width: 340px; min-height: 88px;
+  font-size: 25px; font-weight: 900; line-height: 1.15; padding: 0 12px;
+  border: 4px solid var(--inchiostro); border-radius: 6px;
+  background: var(--inchiostro); color: var(--carta);
+  box-shadow: 5px 5px 0 var(--accento);
+}
+.risposta:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 1px 1px 0 var(--accento); }
+.risposta:disabled { background: #7d776d; border-color: #7d776d; box-shadow: 5px 5px 0 #b9b1a3; }
+
+/* ── risultato ───────────────────────────────────────────────────────────── */
+#risultato { padding: 14px 20px; }
+.risultato { margin: 0 auto; width: 100%; max-width: 1500px; display: flex; flex-direction: column; gap: 12px; }
+.r-testa {
+  display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 26px;
+  padding: 10px 22px; background: var(--carta);
+  border: 4px solid var(--inchiostro); box-shadow: 6px 6px 0 var(--inchiostro);
+}
+.r-centro { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.punteggio { display: flex; flex-direction: column; align-items: center; min-width: 120px; }
+.punteggio b { font-size: 58px; line-height: 1; font-weight: 900; }
+.punteggio span { font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--tenue); }
+.punteggio span i { font-style: normal; }
+.punteggio.modello span i { color: var(--modello); }
+.r-pulsanti { display: flex; flex-direction: column; gap: 8px; }
+.piccolo-btn.ancora { box-shadow: 5px 5px 0 var(--esatto); }
+.punteggio.modello b { color: var(--modello); }
+.piccolo-btn { min-width: 150px; min-height: 64px; font-size: 24px; padding: 0 24px; }
+.legenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; font-size: 14px; color: var(--tenue); }
+.legenda span { display: inline-flex; align-items: center; gap: 5px; }
+
+.segno {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 22px; height: 22px; border-radius: 50%; font-style: normal; font-weight: 900; font-size: 14px;
+  color: #fff; border: 2px solid var(--inchiostro);
+}
+.segno.esatto { background: var(--esatto); }
+.segno.quasi { background: var(--quasi); }
+.segno.sbagliato { background: var(--sbagliato); }
+
+/* 16 schede in 4 colonne: immagine a sinistra, esito a destra */
+/* Schede del risultato: immagine sopra, esito sotto a tutta larghezza. Con
+   l'immagine a fianco il testo restava in una colonna stretta e «Non è sua»
+   finiva su tre righe.
+   --righe lo imposta app.js dal numero di schede: con poche immagini le schede
+   sono piu' grandi invece di lasciare mezzo schermo vuoto. */
+.griglia {
+  --righe: 4;
+  /* valore di partenza: il limite di larghezza della colonna. L'altezza giusta
+     la misura app.js::adattaGriglia() e la riscrive qui. */
+  --mini: min(calc((100vw - 120px) / 4 - 26px), 150px);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+  justify-items: center;
+}
+.scheda {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;
+  /* si stringe attorno all'immagine invece di lasciare spazio vuoto ai lati, ma
+     non sotto la larghezza che serve al testo */
+  width: min(100%, max(186px, calc(var(--mini) + 46px))); background: var(--carta); border: 3px solid var(--inchiostro);
+  box-shadow: 4px 4px 0 var(--inchiostro); padding: 6px 8px 8px 12px;
+}
+.scheda::before {                               /* striscia colorata: esito a colpo d'occhio */
+  content: ""; position: absolute; left: -3px; top: -3px; bottom: -3px; width: 10px;
+  background: var(--colore-esito); border: 3px solid var(--inchiostro); border-right: 0;
+}
+.scheda.esatto { --colore-esito: var(--esatto); }
+.scheda.quasi { --colore-esito: var(--quasi); }
+.scheda.sbagliato { --colore-esito: var(--sbagliato); }
+.scheda .mini { position: relative; flex: none; }
+.scheda img { width: var(--mini); height: var(--mini); display: block; cursor: zoom-in;
+              border: 2px solid var(--inchiostro); background: var(--bordo); }
+.scheda .bollo {                                /* bollo grande sull'immagine */
+  position: absolute; right: -8px; top: -8px; width: 34px; height: 34px; font-size: 20px;
+  border-width: 3px;
+}
+.scheda figcaption { width: 100%; display: flex; flex-direction: column; gap: 2px; }
+.scheda .era { font-size: 12px; color: var(--tenue); text-transform: uppercase; font-weight: 800;
+               letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scheda .era b { color: var(--inchiostro); }
+.scheda .riga { display: flex; align-items: center; gap: 6px; font-size: 14px; line-height: 1.25; }
+.scheda .riga .chi { font-weight: 800; }
+.scheda .riga .cosa { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scheda .riga.modello .chi { color: var(--modello); }
+
+/* ── sovrapposti ─────────────────────────────────────────────────────────── */
+.sovrapposto { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+               background: rgba(20, 18, 15, .45); }
+.sovrapposto.scuro { background: rgba(10, 9, 8, .93); flex-direction: column; gap: 12px; cursor: zoom-out; }
+/* --zoom-max lo imposta app.js dalla risoluzione vera dei file: oltre quel
+   limite si ingrandirebbero solo i pixel. */
+#zoom-immagine { width: min(90vh, 92vw, var(--zoom-max, 720px));
+                 height: min(90vh, 92vw, var(--zoom-max, 720px)); object-fit: contain; }
+.zoom-nota { color: #cfc8ba; font-size: 16px; }
+#zoom-chiudi {
+  position: absolute; top: 18px; right: 18px; width: 64px; height: 64px;
+  font-size: 30px; line-height: 1; border-radius: 50%;
+  border: 3px solid var(--carta); background: rgba(20, 18, 15, .85); color: var(--carta);
+}
+#zoom-chiudi:active { transform: scale(.94); }
+
+.pannello { background: var(--carta); border: 4px solid var(--inchiostro); border-radius: 4px;
+            padding: 24px; width: min(560px, 92vw); max-height: 92vh; overflow-y: auto; }
+.riga-op { display: flex; gap: 12px; align-items: center; font-size: 18px; }
+.riga-op input { flex: 1; font-size: 18px; padding: 10px; border: 3px solid var(--inchiostro); border-radius: 4px; }
+#op-stato { background: var(--sfondo); padding: 12px; border-radius: 4px; font-size: 14px; white-space: pre-wrap;
+            -webkit-user-select: text; user-select: text; }
+.pulsanti-op { display: flex; flex-direction: column; gap: 10px; }
+.pulsanti-op button { min-height: 56px; font-size: 18px; font-weight: 700; border-radius: 4px;
+                      border: 3px solid var(--inchiostro); background: var(--sfondo); }
+
+/* rotellina delle impostazioni: solo nella schermata iniziale, in basso a destra */
+#rotella {
+  position: absolute; right: 18px; bottom: 18px; width: 58px; height: 58px;
+  font-size: 26px; line-height: 1; border-radius: 50%;
+  border: 3px solid var(--inchiostro); background: var(--carta); color: var(--inchiostro);
+  box-shadow: 3px 3px 0 var(--inchiostro);
+}
+#rotella:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--inchiostro); }
+/* uscita dal quiz: accanto alla rotellina, solo nella schermata iniziale */
+#esci {
+  position: absolute; right: 92px; bottom: 18px; height: 58px; padding: 0 18px;
+  font-size: 18px; font-weight: 800; letter-spacing: 1px; border-radius: 29px;
+  border: 3px solid var(--inchiostro); background: var(--carta); color: var(--inchiostro);
+  box-shadow: 3px 3px 0 var(--inchiostro);
+}
+#esci:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--inchiostro); }
+/* lingua delle scritte: accanto a ESCI, stessa forma. La sigla dice la lingua
+   in cui si passa (EN / IT), quindi si capisce in tutte e due le lingue. */
+#lingua {
+  position: absolute; right: 210px; bottom: 18px; width: 74px; height: 58px;
+  font-size: 18px; font-weight: 800; letter-spacing: 1px; border-radius: 29px;
+  border: 3px solid var(--inchiostro); background: var(--carta); color: var(--inchiostro);
+  box-shadow: 3px 3px 0 var(--inchiostro);
+}
+#lingua:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--inchiostro); }
+#imp-immagini .scelta { min-width: 72px; font-size: 22px; font-weight: 800; }
+
+/* angolo operatore: invisibile, abbastanza grande per il dito */
+#angolo { position: fixed; top: 0; left: 0; width: 72px; height: 72px; z-index: 40; touch-action: none; }
+
+#avviso {
+  position: fixed; left: 12px; bottom: 12px; z-index: 60; max-width: 420px;
+  background: var(--accento); color: #fff; padding: 10px 14px; border: 3px solid var(--inchiostro); font-size: 15px;
+}
+.piccolo.ok { color: var(--esatto); font-weight: 700; }
+.piccolo.allarme { color: var(--accento); font-weight: 800; }
+/* modalita' aula: i risultati di questa partita sono arrivati al server? */
+.r-invio { font-weight: 800; font-size: 15px; }
+.r-invio.ok { color: var(--esatto); }
+.r-invio.attesa { color: var(--inchiostro); }
+.r-invio.coda { color: var(--accento); }
+
+#avviso { pointer-events: none; }            /* non deve mai intercettare i tocchi... */
+#avviso.toccabile { pointer-events: auto; cursor: pointer; font-weight: 800; padding: 14px 18px; }  /* ...tranne quando E' un pulsante */
+#avviso.toccabile:active { transform: translate(2px, 2px); }
+
+/* ── orientamento ────────────────────────────────────────────────────────── */
+/* Tablet: si gioca in ORIZZONTALE (in verticale si chiede di girarlo).
+   Telefono: si gioca in VERTICALE, dove un'immagine quadrata ha piu' spazio
+   (vedi in fondo); in orizzontale si chiede di girarlo. */
+#ruota { display: none; }
+#ruota .ruota-verticale { display: none; }
+@media (orientation: portrait) and (min-width: 601px) and (max-width: 1100px),
+       (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #ruota { display: flex; position: fixed; inset: 0; z-index: 100; background: var(--sfondo); }
+  #ruota .icona { font-size: 96px; }
+  #ruota p { font-size: 26px; font-weight: 800; }
+}
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #ruota .icona { font-size: 64px; }
+  #ruota .ruota-orizzontale { display: none; }
+  #ruota .ruota-verticale { display: block; }
+}
+
+/* ── schermi bassi (portatili 1366x768, tablet) ─────────────────────────── */
+@media (max-height: 860px) {
+  .schermata { padding: 14px; }
+  .vignetta { gap: 10px; padding: 18px 28px 22px; box-shadow: 6px 6px 0 var(--inchiostro); }
+  h2 { font-size: 28px; }
+  .guida { font-size: 17px; line-height: 1.4; }
+  .esempi img { width: min(17vh, 160px); height: min(17vh, 160px); }
+  .esempi figcaption { font-size: 14px; }
+  .scelta { min-height: 48px; }
+  .piccolo { font-size: 13px; }
+  .grande { min-height: 64px; font-size: 23px; }
+  .profilo { gap: 10px; }
+  .titolo { font-size: 76px; }
+  .fumetto { font-size: 20px; }
+}
+@media (max-height: 700px) {
+  .risposte { height: 116px; padding-bottom: 16px; }
+  :root { --lato: min(calc(100vh - 240px), calc(100vw - 500px), 620px); }
+}
+/* schermi molto stretti: le schede del risultato su 3 colonne */
+@media (max-width: 1000px) {
+  .griglia { grid-template-columns: repeat(3, minmax(0, 1fr));
+             --mini: min(calc((100vw - 100px) / 3 - 26px), 130px); }
+  .r-testa { gap: 14px; padding: 8px 14px; }
+  .punteggio b { font-size: 42px; }
+  .piccolo-btn { min-width: 130px; min-height: 52px; font-size: 19px; }
+  .legenda { font-size: 13px; }
+  #r-titolo { font-size: 22px; text-align: center; }
+}
+
+/* ── TELEFONO IN VERTICALE ────────────────────────────────────────────────
+   In orizzontale un telefono e' alto 375-412 px: tolte testata, colonna delle
+   opere e pulsanti, all'immagine da giudicare restavano 127-164 px. In
+   verticale la stessa immagine arriva a circa 290-340 px.
+
+   Disposizione della prova, dall'alto: testata compatta, immagine da giudicare,
+   fila delle tre opere autentiche, i tre pulsanti di risposta IN FILA e
+   UGUALI (come su PC: nessuna risposta deve sembrare piu' importante delle
+   altre; i nomi lunghi vanno a capo).
+
+   --alto usa 100svh dove esiste: sui telefoni la barra degli indirizzi che
+   compare e scompare altrimenti fa saltare l'impaginazione. */
+@media (orientation: portrait) and (max-width: 600px) {
+  :root {
+    --alto: 100vh;
+    --testata: 46px;
+    --fila-rif: 86px;
+    --risposte: 78px;
+    /* lato dell'immagine: il minore fra larghezza utile e altezza che resta */
+    --lato: max(150px, min(calc(100vw - 52px), 520px,
+            calc(var(--alto) - var(--testata) - var(--fila-rif) - var(--risposte) - 92px)));
+    --lato-rif: 64px;
+  }
+  @supports (height: 100svh) { :root { --alto: 100svh; } }
+
+  .schermata { padding: 10px; }
+  .vignetta { padding: 16px 14px 18px; gap: 10px; box-shadow: 5px 5px 0 var(--inchiostro); }
+  h2 { font-size: 22px; text-align: center; }
+  .guida { font-size: 16px; line-height: 1.4; }
+  .grande { min-width: 0; width: 100%; min-height: 58px; font-size: 20px; padding: 0 16px; }
+  .scelta { min-height: 46px; min-width: 64px; padding: 0 14px; font-size: 17px; }
+  .domanda > span, .domanda.obbligatoria > span { font-size: 17px; width: 100%; text-align: center; margin: 0; }
+
+  /* avvio */
+  .titolo { font-size: 46px; -webkit-text-stroke: 2px var(--inchiostro); text-shadow: 4px 4px 0 var(--inchiostro); }
+  .fumetto { font-size: 17px; padding: 16px 18px; border-radius: 26px; }
+  .centro { padding: 12px; gap: 20px; }
+
+  /* istruzioni */
+  .esempi { gap: 10px; }
+  .esempi img { width: min(27vw, 110px); height: min(27vw, 110px); }
+  .esempi figcaption { font-size: 12px; }
+
+  /* riferimenti: le tre opere una sotto l'altra, grandi; la pagina scorre */
+  .fila-riferimenti { flex-direction: column; align-items: center; gap: 14px; }
+  .fila-riferimenti img { width: min(calc(100vw - 64px), 340px); height: min(calc(100vw - 64px), 340px); }
+  .suggerimento-rif { font-size: 15px; }
+
+  /* prova */
+  .testata { height: var(--testata); padding: 0 12px 0 72px; font-size: 15px; gap: 8px; }
+  .testata #p-autore { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+  .testata #p-contatore { flex: none; }
+  .puntini { display: none; }
+  /* centrato: sui telefoni alti lo spazio in piu' va sopra e sotto, non tutto in fondo */
+  .corpo { flex-direction: column; justify-content: center; gap: 34px; padding: 22px 12px 8px; }
+  .palco { order: 1; flex: none; padding: 10px; box-shadow: 5px 5px 0 var(--inchiostro); }
+  .laterale {
+    order: 2; flex: none; width: auto; height: var(--fila-rif); padding: 8px 10px;
+    flex-direction: row; gap: 10px; box-shadow: 4px 4px 0 var(--inchiostro);
+  }
+  .laterale .etichetta { width: 82px; flex: none; font-size: 10px; letter-spacing: .2px; line-height: 1.3;
+                         text-align: center; }
+  #p-riferimenti { flex-direction: row; gap: 8px; }
+  #p-riferimenti img { width: var(--lato-rif); height: var(--lato-rif); }
+  /* lente: sotto l'angolo destro della cornice (a destra non c'e' spazio) */
+  .lente.lente-palco { right: -4px; bottom: -32px; width: 36px; height: 36px; }
+  .fumetto-zoom { top: -26px; font-size: 14px; padding: 3px 12px 3px 3px; }
+  .fumetto-zoom .lente.in-linea { width: 22px; height: 22px; }
+  .c-titolo { font-size: 15px; }
+  .c-testo { font-size: 20px; }
+  .c-pulsante { font-size: 26px; }
+  .cartoncino { gap: 10px; padding: 14px; }
+
+  .risposte { height: var(--risposte); padding: 8px 10px 10px; gap: 10px; }
+  /* min-width 0 e a capo anche dentro una parola lunga: i tre pulsanti restano
+     larghi uguali in qualunque lingua */
+  .risposta {
+    min-width: 0; overflow-wrap: break-word; hyphens: auto;
+    min-height: 0; max-width: none; font-size: 15px; line-height: 1.15; padding: 0 6px;
+    border-width: 3px; box-shadow: 3px 3px 0 var(--accento);
+  }
+  .risposta:disabled { box-shadow: 3px 3px 0 #b9b1a3; }
+
+  /* risultato: punteggi affiancati, poi pulsanti, poi schede su due colonne */
+  #risultato { padding: 10px; }
+  .r-testa { grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+  .r-testa .r-centro { grid-column: 1 / -1; grid-row: 2; }
+  .r-testa .r-pulsanti { grid-column: 1 / -1; grid-row: 3; flex-direction: row; }
+  .r-pulsanti .piccolo-btn { flex: 1; min-width: 0; min-height: 52px; font-size: 18px; padding: 0 10px; }
+  .punteggio { min-width: 0; }
+  .punteggio b { font-size: 40px; }
+  #r-titolo { font-size: 19px; }
+  .legenda { font-size: 12px; }
+  .scheda { padding: 6px 6px 8px 12px; }
+  .scheda .riga { font-size: 13px; }
+  /* la categoria vera va a capo invece di essere troncata («Hand-made copy») */
+  .scheda .era { white-space: normal; }
+
+  #zoom-chiudi { top: 10px; right: 10px; width: 54px; height: 54px; }
+}
+/* telefoni alti: le opere di riferimento un po' piu' grandi (la larghezza ne
+   lascia stare tre da circa 74 px accanto all'etichetta) */
+@media (orientation: portrait) and (max-width: 600px) and (min-height: 760px) {
+  :root { --lato-rif: 74px; --fila-rif: 96px; }
+  #lingua, #esci, #rotella { bottom: 12px; }
+}
